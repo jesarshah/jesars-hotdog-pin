@@ -49,6 +49,14 @@ The CLI will print a webhook secret key to the console. Set `STRIPE_WEBHOOK_SECR
 
 You should see events logged in the console where the CLI is running.
 
+**4. Testing:**
+
+1. Enter your details for the purchase -- these are used on the post-payment page. Click "Verify Address" and then enter payment details. 
+2. You can enter the credit card numbers provided in [this testing guide](https://stripe.com/docs/payments/accept-a-payment#web-test-integration). 
+3. Click "Pay now" and if the payment is successful, you will see the next page. 
+
+You will also see a list of successful payments in the console where you set up the webhook. 
+
 
 ## Author(s)
 
