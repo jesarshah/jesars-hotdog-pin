@@ -1,0 +1,109 @@
+const express = require("express");
+const app = express();
+const { resolve } = require("path");
+const fs = require('fs');
+
+// Replace if using a different env file or config
+const env = require("dotenv").config({ path: "./.env" });
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+app.use(express.static(process.env.STATIC_DIR));
+app.use(
+  express.json({
+    // We need the raw body to verify webhook signatures.
+    // Let's compute it only when hitting the Stripe webhook endpoint.
+    verify: function(req, res, buf) {
+      if (req.originalUrl.startsWith("/webhook")) {
+        req.rawBody = buf.toString();
+      }
+      console.log(req.originalUrl);
+    }
+  })
+);
+
+app.get("/checkout", (req, res) => {
+  // Display checkout page
+  const path = resolve(process.env.STATIC_DIR + "/index.html");
+  res.sendFile(path);
+});
+
+const cost = 12; // cost of a hot dog pin
+const calculateOrderAmount = items => {
+  // Replace this constant with a calculation of the order's amount
+  // Calculate the order total on the server to prevent
+  // people from directly manipulating the amount on the client
+  console.log(parseInt(items*cost));
+  var x = parseInt(items*cost)*100;
+  return x;
+};
+
+app.post("/create-payment-intent", async (req, res) => {
+  const { items, id, description, currency, name, email, shipping_address } = req.body;
+  console.log("muahhahhahaha");
+  console.log(calculateOrderAmount(items));
+  console.log(currency);
+  console.log(JSON.stringify(description));
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    // id: id, note: ID a unique identifier created, not one that is set. 
+    description: description,
+    amount: calculateOrderAmount(items),
+    currency: currency
+    // receipt_email: email,
+    // shipping.address: shipping_address,
+    // shipping.name: name,
+  });
+  console.log("this the server" + paymentIntent.amount);
+  fs.writeFile('helloworld.txt', 'Hello World!', function (err) {
+  if (err) return console.log(err);
+  console.log('Hello World > helloworld.txt');
+});
+
+  // Send publishable key and PaymentIntent details to client
+  res.send({
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    clientSecret: paymentIntent.client_secret
+  });
+});
+
+// Expose a endpoint as a webhook handler for asynchronous events.
+// Configure your webhook in the stripe developer dashboard
+// https://dashboard.stripe.com/test/webhooks
+app.post("/webhook", async (req, res) => {
+  let data, eventType;
+  // Check if webhook signing is configured.
+  if (process.env.STRIPE_WEBHOOK_SECRET) {
+    // Retrieve the event by verifying the signature using the raw body and secret.
+    let event;
+    let signature = req.headers["stripe-signature"];
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.log(`⚠️  Webhook signature verification failed.`);
+      return res.sendStatus(400);
+    }
+    data = event.data;
+    eventType = event.type;
+  } else {
+    // Webhook signing is recommended, but if the secret is not configured in `config.js`,
+    // we can retrieve the event data directly from the request body.
+    data = req.body.data;
+    eventType = req.body.type;
+  }
+
+  if (eventType === "payment_intent.succeeded") {
+    // Funds have been captured
+    // Fulfill any orders, e-mail receipts, etc
+    // To cancel the payment after capture you will need to issue a Refund (https://stripe.com/docs/api/refunds)
+    console.log("SUCCESS. Hot dog pin payment captured! Next step: send email to customer.");
+  } else if (eventType === "payment_intent.payment_failed") {
+    console.log("FAILURE. Payment failed.");
+  }
+  res.sendStatus(200);
+});
+
+app.listen(4242, () => console.log(`Node server listening on port ${4242}!`));
