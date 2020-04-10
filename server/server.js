@@ -16,7 +16,6 @@ app.use(
       if (req.originalUrl.startsWith("/webhook")) {
         req.rawBody = buf.toString();
       }
-      console.log(req.originalUrl);
     }
   })
 );
@@ -32,17 +31,12 @@ const calculateOrderAmount = items => {
   // Replace this constant with a calculation of the order's amount
   // Calculate the order total on the server to prevent
   // people from directly manipulating the amount on the client
-  console.log(parseInt(items*cost));
   var x = parseInt(items*cost)*100;
   return x;
 };
 
 app.post("/create-payment-intent", async (req, res) => {
   const { items, id, description, currency, name, email, shipping_address } = req.body;
-  console.log("muahhahhahaha");
-  console.log(calculateOrderAmount(items));
-  console.log(currency);
-  console.log(JSON.stringify(description));
   // Create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({
     // id: id, note: ID a unique identifier created, not one that is set. 
@@ -53,11 +47,6 @@ app.post("/create-payment-intent", async (req, res) => {
     // shipping.address: shipping_address,
     // shipping.name: name,
   });
-  console.log("this the server" + paymentIntent.amount);
-  fs.writeFile('helloworld.txt', 'Hello World!', function (err) {
-  if (err) return console.log(err);
-  console.log('Hello World > helloworld.txt');
-});
 
   // Send publishable key and PaymentIntent details to client
   res.send({
