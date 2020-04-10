@@ -21,7 +21,7 @@ Copy the webhook signing secret to the `.env`.
 
 ## Instructions to run
 
-Keep one terminal open with the webhook forward to localhost port and open a new one, typing in the following commands: 
+Keep one terminal open with the webhook forward to localhost port and open a new one [like here](https://github.com/stripe/stripe-cli), typing in the following commands: 
 
 ```
 npm install
