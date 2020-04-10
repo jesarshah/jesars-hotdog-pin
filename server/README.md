@@ -21,6 +21,8 @@ Copy the webhook signing secret to the `.env`.
 
 ## Instructions to run
 
+Keep one terminal open with the webhook forward to localhost port and open a new one, typing in the following commands: 
+
 ```
 npm install
 npm start
